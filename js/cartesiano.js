@@ -25,7 +25,7 @@ const Cartesiano = (function (canvas_element, { escala = 25,
 
   // ponto em pixels do ponto zero do 1º Quadrante
   let ponto_zero = [((0.5 * canvas.width) + (canvas.width * (plan_graph[0]) * 0.5)), ((0.5 * canvas.height) + (canvas.height * (plan_graph[1]) * 0.5))];
-  
+
   // Converte a coordenada do 1º Quadrante para 4º Quadrante (Pixels) 
   const converte_primeiro_para_quarto = (coordenada) => [ponto_zero[0] + (coordenada[0] * step_size[0]), ponto_zero[1] + (coordenada[1] * step_size[1] * -1)];
 
@@ -92,7 +92,7 @@ const Cartesiano = (function (canvas_element, { escala = 25,
       line = 1;
       xindex = (index - 4) * 60;
     }
-    
+
     context.fillText(`${alfabeto[index]} = (${coordenada[0] + "," + coordenada[1]})`, (margin_spaces / 2) + (xindex), canvas.height - (margin_spaces / 2) * line);
     context.closePath();
 
@@ -191,9 +191,12 @@ const Cartesiano = (function (canvas_element, { escala = 25,
     }
   }
 
+  let cirlesCollide = [];
   this.tictactoe = () => {
-    
+
     context.closePath();
+    let varint = 12;
+    let angleScale = (Math.PI * 2) / varint;
 
     //context.moveTo(ponto_zero[0], ponto_zero[1]);
     for (let indiceCircle = 1; indiceCircle <= 4; indiceCircle++) {
@@ -202,8 +205,6 @@ const Cartesiano = (function (canvas_element, { escala = 25,
       context.stroke();
       context.closePath();
     }
-    let varint = 9;
-    let angleScale = (Math.PI * 2) / 8;
     for (let lineIndex = 0; lineIndex <= varint; lineIndex++) {
       context.beginPath();
       let baseMath = [Math.cos(lineIndex * angleScale), Math.sin(lineIndex * angleScale)];
@@ -211,37 +212,151 @@ const Cartesiano = (function (canvas_element, { escala = 25,
       context.lineTo(ponto_zero[0] + baseMath[0] * escala * 4, ponto_zero[1] + baseMath[1] * escala * 4)
       context.stroke();
       context.closePath();
-      context.beginPath();
 
       for (let indiceCircle = 1; indiceCircle <= 4; indiceCircle++) {
+        context.beginPath();
+        cirlesCollide.push([ponto_zero[0] + baseMath[0] * escala * indiceCircle, ponto_zero[1] + baseMath[1] * indiceCircle * escala])
         context.arc(ponto_zero[0] + baseMath[0] * escala * indiceCircle, ponto_zero[1] + baseMath[1] * indiceCircle * escala, 3, 0, Math.PI * 2, true);
-        // context.addHitRegion({ id: "circle" + indiceCircle + "_" + lineIndex });
         context.fill();
-      }
-      canvas.onclick =  (event)=> {
-        let x=event.x;
-        let y=event.y;
-        let a = converte_primeiro_para_quarto([x,y]);
-        debugger
-      }
-    }
+        context.closePath();
 
+      }
+    } context.fill();
+
+    let colors = ["red", "green"];
+    let indexColor = 0;
+    canvas.addEventListener('click', function (e) {
+      var x = event.pageX - canvas.offsetLeft,
+        y = event.pageY - canvas.offsetTop;
+       let points = cirlesCollide.map((circle, i) => {
+        let a = circle[0]-x;
+        let b = circle[1]-y;
+        return { distance: (Math.sqrt(a * a + b * b)),index:i }
+      });
+      debugger
+      points.sort((a,b)=>{
+        return a.distance-b.distance
+      })
+      if(points[0].distance<60){
+        context.beginPath();
+        context.fillStyle = colors[indexColor];
+
+        context.arc(cirlesCollide[points[0].index][0]  ,cirlesCollide[points[0].index][1] , 9, 0, Math.PI * 2, true);
+        context.fill();
+        context.closePath();
+        cirlesCollide.splice(points[0].index,1);
+        indexColor = (indexColor==0)?1:0;
+
+      }
+
+    });
+
+
+
+    // context.addHitRegion({ id: "circle" + indiceCircle + "_" + lineIndex });
 
 
   }
-  
+
+  this.showValidAnswers = function (angleScale = (Math.PI * 2) / 12) {
+    // linhas de condições de vitória
+    let baseMath = [];
+
+    /* condição de vitoria 1 */
+    context.beginPath();
+    baseMath = [Math.cos(9 * angleScale), Math.sin(9 * angleScale)];
+    //desenha os circulos
+    context.fillStyle = "red";
+    [1, 2, 3, 4].forEach(pointIndex => {
+      context.arc(ponto_zero[0] + baseMath[0] * escala * pointIndex, ponto_zero[1] + baseMath[1] * pointIndex * escala, 6, 0, Math.PI * 2, true);
+    })
+    context.fill();
+    context.closePath();
+
+    // desenha a linha
+    context.beginPath();
+    context.lineWidth = 4;
+    context.strokeStyle = "red";
+    context.moveTo(ponto_zero[0] + baseMath[0] * escala * 1, ponto_zero[1] + baseMath[1] * 1 * escala);
+    context.lineTo(ponto_zero[0] + baseMath[0] * escala * 4, ponto_zero[1] + baseMath[1] * 4 * escala)
+    context.stroke();
+
+    context.fill();
+
+
+    /* condição de vitoria 2 */
+    //desenha os circulos
+    context.fillStyle = "red";
+    let baseMathHistory = [];
+    [10, 11, 12, 13].forEach((pointIndex, i, all) => {
+      baseMath = [Math.cos(pointIndex * angleScale), Math.sin(pointIndex * angleScale)];
+
+      context.beginPath();
+      context.arc(ponto_zero[0] + baseMath[0] * escala * 3, ponto_zero[1] + baseMath[1] * 3 * escala, 6, 0, Math.PI * 2, true);
+      context.fill();
+      context.closePath();
+      if (i > 0) {
+        context.beginPath();
+        context.lineWidth = 4;
+        context.strokeStyle = "red";
+        debugger
+        context.moveTo(ponto_zero[0] + baseMathHistory[i - 1][0] * escala * 3, ponto_zero[1] + baseMathHistory[i - 1][1] * 3 * escala)
+        context.lineTo(ponto_zero[0] + baseMath[0] * escala * 3, ponto_zero[1] + baseMath[1] * 3 * escala)
+        context.stroke();
+        context.closePath();
+      }
+      // armazena a posição angular para uso de desenho das linhas
+      baseMathHistory.push(baseMath);
+    })
+
+    /* condição de vitoria 3 */
+    //desenha os circulos
+    context.fillStyle = "red";
+    baseMathHistory = [];
+    [2, 3, 4, 5].forEach((pointIndex, i) => {
+      baseMath = [Math.cos(pointIndex * angleScale), Math.sin(pointIndex * angleScale)];
+
+      context.beginPath();
+      context.arc(ponto_zero[0] + baseMath[0] * escala * (i + 1), ponto_zero[1] + baseMath[1] * (i + 1) * escala, 6, 0, Math.PI * 2, true);
+      context.fill();
+      context.closePath();
+      if (i > 0) {
+        context.beginPath();
+        context.lineWidth = 4;
+        context.strokeStyle = "red";
+        debugger
+        context.moveTo(ponto_zero[0] + baseMathHistory[i - 1][0] * escala * (i), ponto_zero[1] + baseMathHistory[i - 1][1] * (i) * escala)
+        context.lineTo(ponto_zero[0] + baseMath[0] * escala * (i + 1), ponto_zero[1] + baseMath[1] * (i + 1) * escala)
+        context.stroke();
+        context.closePath();
+      }
+      // armazena a posição angular para uso de desenho das linhas
+      baseMathHistory.push(baseMath);
+    })
+  }
+
   this[graphCartesian]();
 
-
+  this.clear = function () {
+    context.clearRect(0, 0, context.width, context.height);
+  }
 })
-
+let cartesiano = {};
 
 function drawPlanCartesiano() {
-  
-  let cartesiano = new Cartesiano("cartesiano", { graphCartesian: "tictactoe", escala: 50 });
+
+  cartesiano = new Cartesiano("cartesiano", { graphCartesian: "tictactoe", escala: 50 });
   /* 
     Array de pontos cartesianos, cada item da array precisa ter
     coordenadas de X e Y
   */
 
+}
+
+function mostrarRespostasValidas() {
+  cartesiano.showValidAnswers();
+}
+
+function recarregarCanvas() {
+  window.location.reload(false);
 }
